@@ -1,13 +1,21 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from config import Config
 
-def create_app():
-    """Application Factory function to create and configure the Flask app."""
-    app = Flask(__name__)
-    app.config.from_object(Config)
+db = SQLAlchemy()
+migrate = Migrate()
 
-    # We import routes here to avoid circular dependencies
-    with app.app_context():
-        from . import routes
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
+
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # --- ADD THESE TWO LINES ---
+    from app.routes import main
+    app.register_blueprint(main)
+    # ---------------------------
 
     return app

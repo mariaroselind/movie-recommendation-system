@@ -1,8 +1,234 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch | Recommendations</title>
+    <!-- Importing a clean, cinematic font from Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Cinematic Dark Theme Variables */
+        :root {
+            --bg-color: #0F1115;
+            --card-bg: #1A1D24;
+            --accent-color: #E50914; /* Cinema Red */
+            --text-main: #F5F5F1;
+            --text-muted: #A0A5B1;
+        }
 
-{% block content %}
-<div class="text-center py-5">
-    <h1 class="display-4 fw-bold">Welcome to Flix-Rec</h1>
-    <p class="lead">Your personalized movie recommendation engine.</p>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 50px 20px;
+            /* Subtle spotlight gradient at the top */
+            background-image: radial-gradient(circle at top, #1c1f26 0%, transparent 60%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Movie Title Header */
+        h1 {
+            text-align: center;
+            font-weight: 700;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        /* Search Section */
+        .search-box {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 50px;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2a2e39;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            background-color: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: inherit;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder {
+            color: #5a6070;
+        }
+
+        button {
+            padding: 16px 35px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background-color: var(--accent-color);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        button:hover {
+            background-color: #f40612;
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Results Section */
+        #results {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Movie Cards */
+        .movie-card {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            border-left: 6px solid var(--accent-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-left: 6px solid #FFD700; /* Shifts to Gold on hover */
+        }
+
+        .movie-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+
+        .movie-plot {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+        
+        /* Error/Status Text */
+        .status-message {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            padding: 40px;
+        }
+        
+        .loading {
+            color: var(--accent-color);
+            font-weight: 600;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 15px rgba(229, 9, 20, 0.5); }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CineMatch</h1>
+    <p class="subtitle">Discover your next favorite movie</p>
+    
+    <div class="search-box">
+        <input type="text" id="movieInput" placeholder="Enter a movie title (e.g., The Matrix)">
+        <button onclick="getRecommendations()">Search</button>
+    </div>
+
+    <div id="results">
+        <!-- Results will be injected here via JavaScript -->
+    </div>
 </div>
-{% endblock %}
+
+<script>
+    async function getRecommendations() {
+        const title = document.getElementById('movieInput').value;
+        const resultsDiv = document.getElementById('results');
+        
+        if (!title) {
+            resultsDiv.innerHTML = '<p class="status-message">Please enter a movie title to begin your search.</p>';
+            return;
+        }
+
+        // Cinematic loading state
+        resultsDiv.innerHTML = '<p class="status-message loading">Scanning the archives...</p>';
+
+        try {
+            const response = await fetch('/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: title })
+            });
+
+            if (!response.ok) {
+                throw new Error("Movie not found in the database. Try another title!");
+            }
+
+            const movies = await response.json();
+            resultsDiv.innerHTML = ''; 
+
+            movies.forEach(movie => {
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                
+                const movieTitle = document.createElement('div');
+                movieTitle.className = 'movie-title';
+                movieTitle.textContent = movie.title;
+                
+                const moviePlot = document.createElement('div');
+                moviePlot.className = 'movie-plot';
+                moviePlot.textContent = movie.description; 
+                
+                card.appendChild(movieTitle);
+                card.appendChild(moviePlot);
+                resultsDiv.appendChild(card);
+            });
+
+        } catch (error) {
+            resultsDiv.innerHTML = `<p class="status-message" style="color: #E50914;">${error.message}</p>`;
+        }
+    }
+</script>
+
+</body>
+</html>
