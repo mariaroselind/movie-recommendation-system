@@ -5,22 +5,26 @@ from app.models import Movie
 def seed_database(csv_filepath):
     app = create_app()
     with app.app_context():
-        # Read the CSV file
-        df = pd.read_csv(csv_filepath)
+        # Create database tables if they don't exist yet
+        db.create_all()
         
-        # Fill any blank movie overviews with an empty string to prevent errors
+        # Check if movies are already in the database
+        if Movie.query.first() is not None:
+            print("Database is already populated.")
+            return
+
+        print("Populating database from CSV...")
+        df = pd.read_csv(csv_filepath)
         df['overview'] = df['overview'].fillna('')
         
-        # Iterate through the rows and add to the database session
         for index, row in df.iterrows():
             new_movie = Movie(
-                tmdb_id=row['id'],           # Maps CSV 'id' to Model 'tmdb_id'
-                title=row['title'],          # Maps CSV 'title' to Model 'title'
-                description=row['overview']  # Maps CSV 'overview' to Model 'description'
+                tmdb_id=row['id'],
+                title=row['title'],
+                description=row['overview']
             )
             db.session.add(new_movie)
         
-        # Commit the changes to MySQL
         try:
             db.session.commit()
             print("Database successfully populated.")
